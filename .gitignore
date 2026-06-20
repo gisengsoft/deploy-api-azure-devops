@@ -1,0 +1,21 @@
+# Pastas de build do .NET
+bin/
+obj/
+publicado/
+publish/
+out/
+
+# Arquivos do Visual Studio / Rider / VS Code
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Arquivos de usuario e temporarios
+*.tmp
+*.log
+
+# Variaveis de ambiente locais (NUNCA suba segredos)
+appsettings.*.Local.json
+.env

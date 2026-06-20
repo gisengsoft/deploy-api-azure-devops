@@ -1,0 +1,99 @@
+# ============================================================
+#  Pipeline CI/CD - API de Tarefas (.NET 8)
+#  Projeto DIO: "Como fazer o Deploy de uma API na Nuvem na Pratica"
+#  Doc oficial: https://learn.microsoft.com/azure/devops/pipelines/ecosystems/dotnet-core
+# ============================================================
+
+# Dispara o pipeline a cada push na branch main
+trigger:
+  - main
+
+# Maquina (agente) que vai rodar o pipeline
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  buildConfiguration: 'Release'
+
+stages:
+  # ----------------------------------------------------------
+  # ETAPA 1: BUILD (compila o projeto e gera o artefato "drop")
+  # Esta etapa funciona assim que voce subir o codigo. Sem segredos.
+  # ----------------------------------------------------------
+  - stage: Build
+    displayName: 'Build e Publicacao do Artefato'
+    jobs:
+      - job: Build
+        displayName: 'Compilar e empacotar'
+        steps:
+          # Garante o SDK .NET 8 no agente
+          - task: UseDotNet@2
+            displayName: 'Instalar .NET SDK 8'
+            inputs:
+              packageType: 'sdk'
+              version: '8.0.x'
+
+          # Restaura as dependencias
+          - task: DotNetCoreCLI@2
+            displayName: 'Restore'
+            inputs:
+              command: 'restore'
+              projects: '**/*.csproj'
+
+          # Compila em Release
+          - task: DotNetCoreCLI@2
+            displayName: 'Build'
+            inputs:
+              command: 'build'
+              projects: '**/*.csproj'
+              arguments: '--configuration $(buildConfiguration) --no-restore'
+
+          # Publica (gera os arquivos prontos para deploy, ja zipados)
+          - task: DotNetCoreCLI@2
+            displayName: 'Publish'
+            inputs:
+              command: 'publish'
+              publishWebProjects: true
+              arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)'
+              zipAfterPublish: true
+
+          # Envia o pacote .zip como artefato chamado "drop"
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publicar artefato (drop)'
+            inputs:
+              PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+              ArtifactName: 'drop'
+
+  # ----------------------------------------------------------
+  # ETAPA 2: DEPLOY no Azure App Service
+  #
+  # >>> COMO ATIVAR <<<
+  # 1. Crie um App Service (Web App) no portal do Azure.
+  # 2. No Azure DevOps: Project Settings > Service connections >
+  #    New service connection > Azure Resource Manager (autorize sua assinatura).
+  # 3. Troque os dois valores abaixo:
+  #       - azureSubscription: nome da Service Connection criada no passo 2
+  #       - appName: nome exato do seu App Service criado no passo 1
+  # 4. Remova o "#" do inicio de TODAS as linhas deste bloco e faca push.
+  #
+  # Detalhes passo a passo estao no arquivo GUIA-DEPLOY.md
+  # ----------------------------------------------------------
+  # - stage: Deploy
+  #   displayName: 'Deploy no Azure App Service'
+  #   dependsOn: Build
+  #   condition: succeeded()
+  #   jobs:
+  #     - deployment: Deploy
+  #       displayName: 'Publicar no App Service'
+  #       environment: 'producao'
+  #       strategy:
+  #         runOnce:
+  #           deploy:
+  #             steps:
+  #               - task: AzureWebApp@1
+  #                 displayName: 'Deploy para o Azure Web App'
+  #                 inputs:
+  #                   azureSubscription: 'COLOQUE-O-NOME-DA-SUA-SERVICE-CONNECTION'
+  #                   appType: 'webApp'
+  #                   appName: 'COLOQUE-O-NOME-DO-SEU-APP-SERVICE'
+  #                   package: '$(Pipeline.Workspace)/drop/**/*.zip'
