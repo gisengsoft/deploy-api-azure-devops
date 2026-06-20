@@ -1,6 +1,6 @@
 # API de Tarefas — Deploy na Nuvem com Azure DevOps
 
-Projeto do desafio da **DIO** — *"Como fazer o Deploy de uma API na Nuvem na Prática"*.
+Projeto do desafio da **DIO** — *"Como fazer o Deploy de uma API na Nuvem na Prática"*. GILSON INACIO DA SILVA
 
 Uma API REST simples (CRUD de tarefas) feita em **.NET 8**, com um **pipeline de CI/CD no Azure DevOps** que compila, empacota e (opcionalmente) faz o deploy automático no **Azure App Service** a cada `push` na branch `main`.
 
